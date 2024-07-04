@@ -49,7 +49,7 @@ MemoryBlock* firstBlock = NULL;
  */
 void initializeHeap(size_t size){
     // Allocate initial heap block using mmap
-    heapBase = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    heapBase = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0); //MAP_ANONYMOUS may not be defined, depending on GCC version
 
     if (heapBase == MAP_FAILED){
         perror("initializeHeap: mmap failed");
