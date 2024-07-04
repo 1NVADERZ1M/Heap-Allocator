@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <halloc.h>
 
 /*
  * ============================================================================
@@ -21,18 +22,6 @@
  */
 
 
-// Error codes
-#define SUCCESS 0
-#define ERROR_NULL_POINTER -1
-
-// Struct to represent memory blocks on the heap
-typedef struct MemoryBlock {
-    size_t size;
-    bool isFree;
-    struct MemoryBlock * next;
-    struct MemoryBlock * prev;
-} MemoryBlock;
-
 //Global pointer to the start of heap.
 void* heapBase = NULL;
 
@@ -47,7 +36,7 @@ MemoryBlock* firstBlock = NULL;
  * 
  * @param size_t size: The page size to map. 
  */
-void initializeHeap(size_t size){
+void halloc_initializeHeap(size_t size){
     // Allocate initial heap block using mmap
     heapBase = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
@@ -120,7 +109,7 @@ void splitBlock(MemoryBlock* block, size_t size){
  * @param size_t size: requested amount of memory to allocate. 
  * @return: pointer to the usable allocated memory. 
  */
-void* allocate(size_t size){
+void* halloc_allocate(size_t size){
     if (size == 0){
         return NULL;
     }
