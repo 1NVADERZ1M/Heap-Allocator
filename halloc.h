@@ -1,3 +1,18 @@
+/*
+ * ============================================================================
+ *
+ *       Filename:  halloc.h
+ *
+ *    Description:  Header file for halloc.c
+ *
+ *        Created:  06/30/2024 12:17:56
+ *
+ *         Author:  Ray Mier
+ *   Organization:  None
+ *
+ * ============================================================================
+ */
+
 #ifndef HALLOC_H
 #define HALLOC_H
 
@@ -25,5 +40,6 @@ void halloc_initializeHeap(size_t size);
 MemoryBlock* findFreeBlock(size_t size);
 void splitBlock(MemoryBlock* block, size_t size);
 void* halloc_allocate(size_t size);
+void* halloc_deallocate(void * ptr);
 
 #endif 

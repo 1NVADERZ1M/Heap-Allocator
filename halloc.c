@@ -1,11 +1,3 @@
-#include <stdlib.h>
-#include <stdbool.h>
-#include <sys/mman.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <halloc.h>
-
 /*
  * ============================================================================
  *
@@ -16,11 +8,18 @@
  *        Created:  06/30/2024 12:17:56
  *
  *         Author:  Ray Mier
- *   Organization:  NoneAllocator
+ *   Organization:  None
  *
  * ============================================================================
  */
 
+#include <stdlib.h>
+#include <stdbool.h>
+#include <sys/mman.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include "halloc.h"
 
 //Global pointer to the start of heap.
 void* heapBase = NULL;
@@ -165,32 +164,10 @@ int mergeAdjacentFreeBlocks(MemoryBlock* block){
  * @param void* ptr: pointer to the first address of usable memory.
  * 
  */
-void* deallocate(void* ptr){
+void* halloc_deallocate(void* ptr){
     // Pointer arithmatic to get the memory address to the header (MemoryBlock object)
     MemoryBlock* block = (char*)ptr - sizeof(MemoryBlock);
     block->isFree = true;
     mergeAdjacentFreeBlocks(block);
     block = NULL;
-}
-
-
-int main(){
-    initializeHeap(4096); // Gives us 4kb of memory
-
-    char* str = allocate(15 * sizeof(char));
-    strcpy(str, "Hello World!");
-    printf("Size: %zu\n", strlen(str));
-
-    deallocate(str);
-
-    int* nums = allocate(15 * sizeof(int));
-    for (int i = 0; i < 15; i++){
-        nums[i] = i;
-    }
-
-    for (int j = 0; j < 15; j++){
-        printf("%d\t", nums[j]);
-    }
-
-    return 0;
 }
