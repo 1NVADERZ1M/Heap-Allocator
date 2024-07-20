@@ -36,10 +36,10 @@ extern void* heapBase;
 extern MemoryBlock* firstBlock;
 
 //Functions for use in "halloc.h"
-void halloc_initializeHeap(size_t size);
+void halloc_initializeHeap(size_t numPages);
 MemoryBlock* findFreeBlock(size_t size);
 void splitBlock(MemoryBlock* block, size_t size);
 void* halloc_allocate(size_t size);
-void* halloc_deallocate(void * ptr);
+void halloc_deallocate(void * ptr);
 
 #endif 

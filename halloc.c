@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 #include "halloc.h"
 
 //Global pointer to the start of heap.
@@ -33,22 +34,31 @@ MemoryBlock* firstBlock = NULL;
  * 
  * mmap maps bytes to a pointer and sets them equal to 0.
  * 
- * @param size_t size: The page size to map. 
+ * @param size_t numPages: The amount of memory pages to map. 
  */
-void halloc_initializeHeap(size_t size){
+void halloc_initializeHeap(size_t numPages){
+    // Error handling for when the heap has already been initialized
+    if (heapBase != NULL){
+        perror("halloc_initializeHeap: Heap is already initialized.");
+        return;
+    }
+
+    long pageSize = sysconf(_SC_PAGESIZE);
+    size_t size = numPages * pageSize; // Calculate the total size based on the number of pages
+    
     // Allocate initial heap block using mmap
     heapBase = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
     if (heapBase == MAP_FAILED){
-        perror("initializeHeap: mmap failed");
+        perror("halloc_initializeHeap: mmap failed");
         heapBase = NULL;
-    } else {
-        firstBlock = (MemoryBlock*)heapBase;
-        firstBlock->size = size - sizeof(MemoryBlock); 
-        firstBlock->isFree = true;
-        firstBlock->next = NULL;
-        firstBlock->prev = NULL;
+        return;
     }
+
+    firstBlock = (MemoryBlock*)heapBase;
+    firstBlock->size = size - sizeof(MemoryBlock); 
+    firstBlock->isFree = true;
+    firstBlock->next = NULL;
+    firstBlock->prev = NULL;
 }
 
 
@@ -59,14 +69,18 @@ void halloc_initializeHeap(size_t size){
  * @return *MemoryBlock a pointer to the memory block
  */
 MemoryBlock* findFreeBlock(size_t size){
+    if (size == 0){
+        fprintf(stderr, "findFreeBlock: Please request size greater than 0");
+        return NULL;
+    }
     MemoryBlock* block = firstBlock;
     while(block != NULL){
-        if (block-> isFree == true && block->size >= size) return block;
+        if (block->isFree == true && block->size >= size) return block;
         else{
             block = block->next;
         }
     }
-    perror("findFreeBlock: No free blocks fit the requested size.");
+    fprintf(stderr, "findFreeBlock: No free blocks fit the requested size");
     return NULL;
 }
 
@@ -80,6 +94,12 @@ MemoryBlock* findFreeBlock(size_t size){
  * @param size_t size: the desired size. 
  */
 void splitBlock(MemoryBlock* block, size_t size){
+    // Error handling 
+    if (block == NULL){
+        fprintf(stderr, "splitBlock: Null block pointer passed to function.");
+        return;
+    }
+    // Determine if the current block size is 128 bytes larger than the requested size
     if (block->size > size + 128) {
         // Calculate the address for the new block
         MemoryBlock* newBlock = (MemoryBlock*)((char*)block + sizeof(MemoryBlock) + size);
@@ -106,12 +126,15 @@ void splitBlock(MemoryBlock* block, size_t size){
  * Allocate a block of memory with at least the desired size.
  * 
  * @param size_t size: requested amount of memory to allocate. 
- * @return: pointer to the usable allocated memory. 
+ * @return: pointer to first address of the the usable allocated memory. 
  */
 void* halloc_allocate(size_t size){
+    // Error handling
     if (size == 0){
+        fprintf(stderr, "halloc_allocate: Please allocate more than 0 bytes.");
         return NULL;
     }
+
     MemoryBlock* block = findFreeBlock(size);
     if (block == NULL){
         return NULL;
@@ -119,7 +142,7 @@ void* halloc_allocate(size_t size){
 
     splitBlock(block, size);
     block->isFree = false;
-    return ((char*)block + sizeof(MemoryBlock));
+    return ((char*)block + sizeof(MemoryBlock)); // Pointer to first address of usable memory.
 }
 
 
@@ -142,7 +165,7 @@ int mergeAdjacentFreeBlocks(MemoryBlock* block){
             if (block->next != NULL){
                 block->next->prev = block->prev;
             }
-            block = block->prev;
+            block = block->prev; // Move to previous block to check for further merges. 
         }
 
         // Merge with next block if it's free.
@@ -164,8 +187,8 @@ int mergeAdjacentFreeBlocks(MemoryBlock* block){
  * @param void* ptr: pointer to the first address of usable memory.
  * 
  */
-void* halloc_deallocate(void* ptr){
-    // Pointer arithmatic to get the memory address to the header (MemoryBlock object)
+void halloc_deallocate(void* ptr){
+    // Pointer arithmetic to get the memory address to the header (MemoryBlock object)
     MemoryBlock* block = (char*)ptr - sizeof(MemoryBlock);
     block->isFree = true;
     mergeAdjacentFreeBlocks(block);
